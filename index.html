@@ -17,10 +17,8 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         [x-cloak] { display: none !important; }
         
-        /* UPDATE: Header menggunakan warna biru tema (indigo-600) */
         .glass { background: rgba(79, 70, 229, 0.98); backdrop-filter: blur(16px); }
         
-        /* UPDATE: Dukungan Safe Area untuk Status Bar pada APK */
         header { 
             padding-top: calc(3rem + env(safe-area-inset-top)) !important; 
             padding-bottom: 1rem !important;
@@ -43,7 +41,6 @@
             content-visibility: auto; 
             overflow-x: hidden;
             position: relative;
-            /* UPDATE: Menambah jarak aman agar tidak tertutup header yang lebih tinggi */
             padding-top: calc(7.8rem + env(safe-area-inset-top)) !important;
         }
 
@@ -651,17 +648,30 @@
                         doc.setTextColor(160);
                         doc.text(`SmartStock - Halaman ${i} / ${pageCount}`, 105, 290, { align: 'center' });
                     }
-                    doc.save(`Laporan_${monthName.replace(' ', '_')}.pdf`);
+                    
+                    // UPDATE: Metode download Base64 untuk APK
+                    const pdfData = doc.output('datauristring');
+                    const link = document.createElement('a');
+                    link.href = pdfData;
+                    link.download = `Laporan_${monthName.replace(' ', '_')}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 },
 
                 exportData() {
                     const data = { items: this.items, transactions: this.transactions, config: this.config };
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
+                    const jsonStr = JSON.stringify(data, null, 2);
+                    
+                    // UPDATE: Metode download Base64 untuk JSON Backup
+                    const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+                    const dataUri = 'data:application/json;base64,' + base64Data;
                     const a = document.createElement("a");
-                    a.href = url;
+                    a.href = dataUri;
                     a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
                 },
 
                 importData(event) {
