@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -17,10 +18,8 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         [x-cloak] { display: none !important; }
         
-        /* UPDATE: Header menggunakan warna biru tema (indigo-600) */
         .glass { background: rgba(79, 70, 229, 0.98); backdrop-filter: blur(16px); }
         
-        /* UPDATE: Dukungan Safe Area untuk Status Bar pada APK */
         header { 
             padding-top: calc(3rem + env(safe-area-inset-top)) !important; 
             padding-bottom: 1rem !important;
@@ -43,7 +42,6 @@
             content-visibility: auto; 
             overflow-x: hidden;
             position: relative;
-            /* UPDATE: Menambah jarak aman agar tidak tertutup header yang lebih tinggi */
             padding-top: calc(7.8rem + env(safe-area-inset-top)) !important;
         }
 
@@ -63,6 +61,15 @@
         .transition, [x-transition] {
             transition-duration: 150ms !important;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        #report-template {
+            width: 800px;
+            padding: 40px;
+            background: white;
+            position: absolute;
+            left: -9999px;
+            top: 0;
         }
     </style>
 </head>
@@ -174,14 +181,21 @@
                     <h2 class="font-black text-2xl text-slate-800 mb-6">Laporan Per Bulan</h2>
                     <div class="space-y-4">
                         <template x-for="report in getMonthlyReports()" :key="report.key">
-                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex justify-between items-center">
-                                <div>
-                                    <p class="text-lg font-black text-slate-800" x-text="report.monthName"></p>
-                                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider" x-text="report.count + ' Transaksi'"></p>
+                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col gap-4">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-lg font-black text-slate-800" x-text="report.monthName"></p>
+                                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider" x-text="report.count + ' Transaksi'"></p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button @click="previewImage(report)" class="bg-indigo-50 text-indigo-600 px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 active:scale-95 transition">
+                                            <i class="fas fa-eye"></i> Lihat
+                                        </button>
+                                        <button @click="downloadMonthlyPDF(report.month, report.year, report.monthName)" class="bg-emerald-50 text-emerald-600 px-4 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 active:scale-95 transition">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </button>
+                                    </div>
                                 </div>
-                                <button @click="downloadMonthlyPDF(report.month, report.year, report.monthName)" class="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 active:scale-95 transition">
-                                    <i class="fas fa-file-pdf"></i> PDF
-                                </button>
                             </div>
                         </template>
                     </div>
@@ -221,6 +235,100 @@
             </div>
         </div>
     </main>
+
+    <div x-show="showImagePreview" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md" @click="showImagePreview = false"></div>
+        <div class="relative bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="font-black text-lg">Pratinjau Laporan</h3>
+                <button @click="showImagePreview = false" class="text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 bg-slate-100">
+                <img :src="previewImageData" class="w-full shadow-lg rounded-lg border border-slate-200" x-show="previewImageData">
+                <div x-show="!previewImageData" class="flex flex-col items-center justify-center py-20">
+                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent"></div>
+                    <p class="mt-4 font-bold text-slate-500">Menyiapkan Gambar...</p>
+                </div>
+            </div>
+            <div class="p-6 bg-white flex gap-3">
+                <button @click="downloadPNG()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-download"></i> Download PNG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="report-template" x-ref="reportTemplate">
+        <div class="border-b-4 border-indigo-600 pb-6 mb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-black text-indigo-600">SMARTSTOCK</h1>
+                <p class="text-slate-400 font-bold">Laporan Inventaris Digital Otomatis</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-bold text-slate-400 uppercase">Periode Laporan</p>
+                <p class="text-2xl font-black text-slate-800" x-text="activeReportName"></p>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-sm font-black text-slate-800 mb-4 bg-slate-100 p-2 rounded">I. RINGKASAN MUTASI BARANG</h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-indigo-600 text-white text-[10px]">
+                        <th class="p-2 border border-indigo-600">SKU</th>
+                        <th class="p-2 border border-indigo-600">NAMA ITEM</th>
+                        <th class="p-2 border border-indigo-600 text-center">AWAL</th>
+                        <th class="p-2 border border-indigo-600 text-center">MASUK</th>
+                        <th class="p-2 border border-indigo-600 text-center">KELUAR</th>
+                        <th class="p-2 border border-indigo-600 text-center">AKHIR</th>
+                    </tr>
+                </thead>
+                <tbody class="text-[10px]">
+                    <template x-for="item in reportDataSummary">
+                        <tr class="border-b border-slate-100">
+                            <td class="p-2 font-bold text-slate-600" x-text="item[0]"></td>
+                            <td class="p-2 text-slate-800" x-text="item[1]"></td>
+                            <td class="p-2 text-center" x-text="item[2]"></td>
+                            <td class="p-2 text-center text-emerald-600 font-bold" x-text="item[3]"></td>
+                            <td class="p-2 text-center text-rose-600 font-bold" x-text="item[4]"></td>
+                            <td class="p-2 text-center bg-slate-50 font-black" x-text="item[5]"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-sm font-black text-slate-800 mb-4 bg-slate-100 p-2 rounded">II. LOG AKTIVITAS TRANSAKSI</h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-600 text-white text-[10px]">
+                        <th class="p-2 border border-slate-600">TANGGAL</th>
+                        <th class="p-2 border border-slate-600">SKU</th>
+                        <th class="p-2 border border-slate-600">STATUS</th>
+                        <th class="p-2 border border-slate-600 text-center">QTY</th>
+                        <th class="p-2 border border-slate-600">LOKASI</th>
+                    </tr>
+                </thead>
+                <tbody class="text-[9px]">
+                    <template x-for="trx in reportTrxDetails">
+                        <tr class="border-b border-slate-100">
+                            <td class="p-2 text-slate-600" x-text="trx.date.split(',')[0]"></td>
+                            <td class="p-2 font-bold text-slate-800" x-text="trx.invNo"></td>
+                            <td class="p-2 font-bold" :class="trx.type === 'in' ? 'text-emerald-600' : 'text-rose-600'" x-text="trx.type === 'in' ? 'MASUK' : 'KELUAR'"></td>
+                            <td class="p-2 text-center font-bold" x-text="trx.type === 'in' ? '+' + trx.qty : '-' + trx.qty"></td>
+                            <td class="p-2 text-slate-500" x-text="trx.location"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="text-[8px] text-slate-400 flex justify-between items-center mt-10 pt-4 border-t border-dashed">
+            <p x-text="'Dicetak pada: ' + new Date().toLocaleString('id-ID')"></p>
+            <p>SmartStock System IT Version</p>
+        </div>
+    </div>
 
     <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 px-6 pt-5 pb-10 z-40 flex justify-between safe-area-bottom gpu-layer">
         <button @click="currentTab = 'dashboard'" :class="currentTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
@@ -333,6 +441,12 @@
                 transactionType: 'in',
                 customModal: { show: false, title: '', message: '', type: 'info', isConfirm: false, btnText: 'OK', onConfirm: () => {} },
                 isSwiping: false,
+
+                showImagePreview: false,
+                previewImageData: '',
+                activeReportName: '',
+                reportDataSummary: [],
+                reportTrxDetails: [],
 
                 showAlert(title, message, type = 'info') {
                     this.customModal = { show: true, title, message, type, isConfirm: false, btnText: 'OK', onConfirm: () => {} };
@@ -535,6 +649,65 @@
                     return Object.values(groups).sort((a, b) => (b.year - a.year) || (b.month - a.month));
                 },
 
+                previewImage(report) {
+                    this.showImagePreview = true;
+                    this.previewImageData = '';
+                    this.activeReportName = report.monthName;
+
+                    const targetStartDate = new Date(report.year, report.month, 1);
+                    const targetEndDate = new Date(report.year, report.month + 1, 0, 23, 59, 59);
+
+                    this.reportDataSummary = this.items.map(item => {
+                        let saldoLalu = 0, masuk = 0, keluar = 0;
+                        this.transactions.forEach(t => {
+                            const tDate = new Date(t.timestamp);
+                            if (t.invNo === item.invNo) {
+                                if (tDate < targetStartDate) {
+                                    if (t.type === 'in') saldoLalu += parseInt(t.qty);
+                                    else saldoLalu -= parseInt(t.qty);
+                                } else if (tDate <= targetEndDate) {
+                                    if (t.type === 'in') masuk += parseInt(t.qty);
+                                    else keluar += parseInt(t.qty);
+                                }
+                            }
+                        });
+                        return [
+                            item.invNo, 
+                            item.name.toUpperCase(), 
+                            saldoLalu.toLocaleString('id-ID'), 
+                            masuk.toLocaleString('id-ID'), 
+                            keluar.toLocaleString('id-ID'), 
+                            (saldoLalu + masuk - keluar).toLocaleString('id-ID')
+                        ];
+                    });
+
+                    this.reportTrxDetails = this.transactions
+                        .filter(t => {
+                            const tDate = new Date(t.timestamp);
+                            return tDate >= targetStartDate && tDate <= targetEndDate;
+                        })
+                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            html2canvas(document.querySelector("#report-template"), {
+                                scale: 2,
+                                logging: false,
+                                useCORS: true
+                            }).then(canvas => {
+                                this.previewImageData = canvas.toDataURL("image/png");
+                            });
+                        }, 500);
+                    });
+                },
+
+                downloadPNG() {
+                    const link = document.createElement('a');
+                    link.download = `Report_${this.activeReportName.replace(' ', '_')}.png`;
+                    link.href = this.previewImageData;
+                    link.click();
+                },
+
                 downloadMonthlyPDF(month, year, monthName) {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF('p', 'mm', 'a4');
@@ -652,7 +825,6 @@
                         doc.text(`SmartStock - Halaman ${i} / ${pageCount}`, 105, 290, { align: 'center' });
                     }
                     
-                    /* PERBAIKAN LOGIKA DOWNLOAD AGAR EKSTENSI TETAP .PDF */
                     const safeFileName = `Laporan_${monthName.split(' ').join('_')}.pdf`;
                     const pdfOutput = doc.output('blob');
                     const pdfUrl = URL.createObjectURL(pdfOutput);
