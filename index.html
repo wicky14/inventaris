@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#4f46e5">
     <title>SmartStock</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -16,10 +16,15 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         [x-cloak] { display: none !important; }
-        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(16px); }
         
-        /* Dukungan Safe Area untuk Header & Navigation */
-        header { padding-top: calc(1.25rem + env(safe-area-inset-top)) !important; }
+        /* UPDATE: Header menggunakan warna biru tema (indigo-600) */
+        .glass { background: rgba(79, 70, 229, 0.98); backdrop-filter: blur(16px); }
+        
+        /* UPDATE: Dukungan Safe Area untuk Status Bar pada APK */
+        header { 
+            padding-top: calc(1.5rem + env(safe-area-inset-top)) !important; 
+            padding-bottom: 1rem !important;
+        }
         .safe-area-bottom { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); }
         
         ::-webkit-scrollbar { width: 0px; background: transparent; }
@@ -38,8 +43,8 @@
             content-visibility: auto; 
             overflow-x: hidden;
             position: relative;
-            /* Jarak aman agar konten tidak tertutup header */
-            padding-top: calc(6.5rem + env(safe-area-inset-top)) !important;
+            /* UPDATE: Menambah jarak aman agar tidak tertutup header yang lebih tinggi */
+            padding-top: calc(7.5rem + env(safe-area-inset-top)) !important;
         }
 
         .tabs-wrapper {
@@ -63,13 +68,13 @@
 </head>
 <body class="bg-slate-50 text-slate-900 overflow-hidden" x-data="inventoryApp()" x-init="init()">
 
-    <header class="fixed top-0 w-full glass z-40 border-b border-slate-200 px-6 py-5 flex justify-between items-center gpu-layer">
+    <header class="fixed top-0 w-full glass z-40 border-b border-indigo-500/30 px-6 flex justify-between items-center gpu-layer">
         <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-indigo-600">SmartStock <span class="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full ml-1">IT</span></h1>
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest" x-text="currentTab"></p>
+            <h1 class="text-xl font-extrabold tracking-tight text-white">SmartStock <span class="text-[10px] bg-white text-indigo-600 px-2 py-0.5 rounded-full ml-1">IT</span></h1>
+            <p class="text-[10px] text-indigo-100 font-bold uppercase tracking-widest" x-text="currentTab"></p>
         </div>
         <div class="flex items-center gap-3">
-            <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">Next: <span class="text-indigo-600" x-text="generatePreview()"></span></span>
+            <span class="text-[10px] font-mono font-bold text-indigo-100 bg-indigo-700/50 px-2 py-1 rounded">Next: <span class="text-white" x-text="generatePreview()"></span></span>
         </div>
     </header>
 
@@ -217,7 +222,7 @@
         </div>
     </main>
 
-    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 px-6 pt-5 pb-10 z-40 flex justify-between safe-area-bottom gpu-layer">
+    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 px-6 pt-5 pb-10 z-40 flex justify-between safe-area-bottom gpu-layer">
         <button @click="currentTab = 'dashboard'" :class="currentTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
             <i class="fas fa-house-chimney text-xl"></i>
             <span class="text-[10px] font-bold tracking-wide">DASHBOARD</span>
