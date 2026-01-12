@@ -15,7 +15,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            overflow-y: auto !important;
+        }
         [x-cloak] { display: none !important; }
         
         .glass { background: rgba(79, 70, 229, 0.98); backdrop-filter: blur(16px); }
@@ -38,10 +42,10 @@
 
         main {
             -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: contain;
-            content-visibility: auto; 
+            overscroll-behavior-y: auto; 
             overflow-x: hidden;
             position: relative;
+            min-height: 100vh;
             padding-top: calc(7.8rem + env(safe-area-inset-top)) !important;
         }
 
@@ -49,13 +53,25 @@
             display: flex;
             width: 400%;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 100%;
+            /* Memperbaiki tinggi agar mengikuti konten aktif */
+            align-items: flex-start;
         }
 
         .tab-section {
             width: 25%;
             flex-shrink: 0;
             padding: 0 1.5rem;
+            /* Memastikan tab yang tidak aktif tidak menambah tinggi halaman */
+            height: 0;
+            overflow: hidden;
+            visibility: hidden;
+        }
+
+        /* Kelas aktif untuk memunculkan konten dan tinggi data */
+        .tab-section.active-tab {
+            height: auto;
+            overflow: visible;
+            visibility: visible;
         }
 
         .transition, [x-transition] {
@@ -73,7 +89,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 overflow-hidden" x-data="inventoryApp()" x-init="init()">
+<body class="bg-slate-50 text-slate-900" x-data="inventoryApp()" x-init="init()">
 
     <header class="fixed top-0 w-full glass z-40 border-b border-indigo-500/30 px-6 flex justify-between items-center gpu-layer">
         <div>
@@ -91,10 +107,10 @@
         </button>
     </div>
 
-    <main class="h-screen pt-24 pb-40">
+    <main class="pb-40">
         <div class="tabs-wrapper" :style="'transform: translateX(-' + (tabsOrder.indexOf(currentTab) * 25) + '%)'">
             
-            <div class="tab-section">
+            <div class="tab-section" :class="currentTab === 'dashboard' ? 'active-tab' : ''">
                 <div class="gpu-layer">
                     <div class="grid grid-cols-2 gap-4 mb-8">
                         <div class="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
@@ -136,11 +152,17 @@
                                 </div>
                             </div>
                         </template>
+
+                        <template x-if="transactions.length > showLimit">
+                            <button @click="showLimit += 10" class="w-full py-4 bg-white border border-slate-100 rounded-3xl text-indigo-600 font-bold text-xs uppercase tracking-widest shadow-sm active:scale-95 transition">
+                                Tampilkan Lebih Banyak
+                            </button>
+                        </template>
                     </div>
                 </div>
             </div>
 
-            <div class="tab-section">
+            <div class="tab-section" :class="currentTab === 'barang' ? 'active-tab' : ''">
                 <div class="gpu-layer">
                     <div class="relative mb-6">
                         <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -176,11 +198,11 @@
                 </div>
             </div>
 
-            <div class="tab-section">
+            <div class="tab-section" :class="currentTab === 'laporan' ? 'active-tab' : ''">
                 <div class="gpu-layer">
                     <h2 class="font-black text-2xl text-slate-800 mb-6">Laporan Per Bulan</h2>
                     <div class="space-y-4">
-                        <template x-for="report in getMonthlyReports()" :key="report.key">
+                        <template x-for="report in getMonthlyReports().slice(0, reportLimit)" :key="report.key">
                             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col gap-4">
                                 <div class="flex justify-between items-center">
                                     <div>
@@ -198,11 +220,17 @@
                                 </div>
                             </div>
                         </template>
+
+                        <template x-if="getMonthlyReports().length > reportLimit">
+                            <button @click="reportLimit += 12" class="w-full py-4 bg-white border border-slate-100 rounded-3xl text-indigo-600 font-bold text-xs uppercase tracking-widest shadow-sm active:scale-95 transition">
+                                Tampilkan Laporan Lainnya
+                            </button>
+                        </template>
                     </div>
                 </div>
             </div>
 
-            <div class="tab-section">
+            <div class="tab-section" :class="currentTab === 'settings' ? 'active-tab' : ''">
                 <div class="gpu-layer">
                     <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 space-y-6">
                         <h2 class="font-black text-2xl text-slate-800">Sistem & Data</h2>
@@ -235,6 +263,25 @@
             </div>
         </div>
     </main>
+
+    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 px-6 pt-5 pb-10 z-40 flex justify-between safe-area-bottom gpu-layer">
+        <button @click="currentTab = 'dashboard'" :class="currentTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
+            <i class="fas fa-house-chimney text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wide">DASHBOARD</span>
+        </button>
+        <button @click="currentTab = 'barang'" :class="currentTab === 'barang' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
+            <i class="fas fa-box-open text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wide">BARANG</span>
+        </button>
+        <button @click="currentTab = 'laporan'" :class="currentTab === 'laporan' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
+            <i class="fas fa-chart-pie text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wide">LAPORAN</span>
+        </button>
+        <button @click="currentTab = 'settings'" :class="currentTab === 'settings' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
+            <i class="fas fa-sliders text-xl"></i>
+            <span class="text-[10px] font-bold tracking-wide">SETTINGS</span>
+        </button>
+    </nav>
 
     <div x-show="showImagePreview" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-md" @click="showImagePreview = false"></div>
@@ -330,25 +377,6 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 px-6 pt-5 pb-10 z-40 flex justify-between safe-area-bottom gpu-layer">
-        <button @click="currentTab = 'dashboard'" :class="currentTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
-            <i class="fas fa-house-chimney text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wide">DASHBOARD</span>
-        </button>
-        <button @click="currentTab = 'barang'" :class="currentTab === 'barang' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
-            <i class="fas fa-box-open text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wide">BARANG</span>
-        </button>
-        <button @click="currentTab = 'laporan'" :class="currentTab === 'laporan' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
-            <i class="fas fa-chart-pie text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wide">LAPORAN</span>
-        </button>
-        <button @click="currentTab = 'settings'" :class="currentTab === 'settings' ? 'text-indigo-600' : 'text-slate-400'" class="flex flex-col items-center gap-1.5 transition-colors">
-            <i class="fas fa-sliders text-xl"></i>
-            <span class="text-[10px] font-bold tracking-wide">SETTINGS</span>
-        </button>
-    </nav>
-
     <div x-show="openModal" x-cloak class="fixed inset-0 z-[60] flex items-end px-0">
         <div x-show="openModal" x-transition @click="openModal = false" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
         <div class="relative bg-white w-full rounded-t-[3rem] p-8 pb-14 shadow-2xl z-10 gpu-layer" x-transition:enter="transition translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="transition translate-y-0" x-transition:leave-end="translate-y-full">
@@ -409,7 +437,7 @@
 
     <div x-show="customModal.show" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center px-8">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="if(!customModal.isConfirm) customModal.show = false"></div>
-        <div class="relative bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center gpu-layer" x-transition:enter="transition scale-90 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+        <div class="relative bg-white w-full max-sm rounded-[2.5rem] p-8 shadow-2xl text-center gpu-layer" x-transition:enter="transition scale-90 opacity-0" x-transition:enter-end="scale-100 opacity-100">
             <div class="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4" :class="customModal.type === 'error' ? 'bg-rose-100 text-rose-500' : 'bg-indigo-100 text-indigo-500'">
                 <i class="fas" :class="customModal.type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'"></i>
             </div>
@@ -436,7 +464,8 @@
                 config: { prefix: 'SKU-' + new Date().getFullYear() + '-', lastIteration: 0, padding: 3 },
                 newItem: { name: '', price: '', location: '', ratio: 1, isPackage: false },
                 trxQty: '',
-                showLimit: 20,
+                showLimit: 10,
+                reportLimit: 12, // Batasan awal tampilan laporan
                 selectedItemId: 'new',
                 transactionType: 'in',
                 customModal: { show: false, title: '', message: '', type: 'info', isConfirm: false, btnText: 'OK', onConfirm: () => {} },
@@ -460,6 +489,11 @@
                     this.items = JSON.parse(localStorage.getItem('ss_items_v5') || '[]');
                     this.transactions = JSON.parse(localStorage.getItem('ss_transactions_v5') || '[]');
                     this.config = JSON.parse(localStorage.getItem('ss_config_v5') || JSON.stringify(this.config));
+
+                    // Memastikan scroll reset ke atas saat berpindah tab
+                    this.$watch('currentTab', () => {
+                        window.scrollTo({ top: 0, behavior: 'instant' });
+                    });
 
                     const mainElement = document.querySelector('main');
                     const mc = new Hammer(mainElement);
@@ -705,7 +739,6 @@
                     const base64Data = this.previewImageData;
                     if (!base64Data) return;
 
-                    // Konversi Base64 ke Blob (Penting untuk stabilitas di Mobile/APK)
                     const byteString = atob(base64Data.split(',')[1]);
                     const mimeString = base64Data.split(',')[0].split(':')[1].split(';')[0];
                     const ab = new ArrayBuffer(byteString.length);
@@ -716,7 +749,6 @@
                     }
                     const blob = new Blob([ab], { type: mimeString });
 
-                    // Gunakan Blob URL untuk download
                     const fileName = `Report_${this.activeReportName.replace(/\s+/g, '_')}.png`;
                     const url = window.URL.createObjectURL(blob);
                     const link = document.createElement('a');
@@ -724,11 +756,9 @@
                     link.href = url;
                     link.download = fileName;
                     
-                    // Tambahkan ke DOM sementara untuk trigger di mobile
                     document.body.appendChild(link);
                     link.click();
                     
-                    // Bersihkan
                     setTimeout(() => {
                         document.body.removeChild(link);
                         window.URL.revokeObjectURL(url);
