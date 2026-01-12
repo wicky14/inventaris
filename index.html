@@ -31,6 +31,21 @@
             -webkit-overflow-scrolling: touch;
             overscroll-behavior-y: contain;
             content-visibility: auto; 
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .tabs-wrapper {
+            display: flex;
+            width: 400%;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+        }
+
+        .tab-section {
+            width: 25%;
+            flex-shrink: 0;
+            padding: 0 1.5rem;
         }
 
         .transition, [x-transition] {
@@ -57,108 +72,129 @@
         </button>
     </div>
 
-    <main class="h-screen overflow-y-auto pt-24 pb-40 px-6">
-        <div x-show="currentTab === 'dashboard'" x-transition class="gpu-layer">
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
-                    <p class="text-[10px] font-bold opacity-70 uppercase tracking-wider">Total Unit</p>
-                    <p class="text-3xl font-black mt-1" x-text="totalStock()"></p>
-                </div>
-                <div @click="currentTab = 'barang'" class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm text-left">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Jenis Barang</p>
-                    <p class="text-3xl font-black text-slate-800 mt-1" x-text="items.length"></p>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-extrabold text-slate-800">Riwayat Transaksi</h2>
-                <span class="text-[10px] font-bold text-slate-400 uppercase" x-text="transactions.length + ' Total'"></span>
-            </div>
+    <main class="h-screen pt-24 pb-40">
+        <div class="tabs-wrapper" :style="'transform: translateX(-' + (tabsOrder.indexOf(currentTab) * 25) + '%)'">
             
-            <div class="space-y-3">
-                <template x-for="(trx, index) in transactions.slice(0, showLimit)" :key="trx.id">
-                    <div class="bg-white p-4 rounded-3xl flex items-center justify-between border border-slate-50 shadow-sm">
-                        <div class="flex items-center gap-4">
-                            <div :class="trx.type === 'in' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'" 
-                                 class="w-12 h-12 rounded-2xl flex items-center justify-center text-lg">
-                                <i :class="trx.type === 'in' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-sm text-slate-800" x-text="trx.itemName"></p>
-                                <p class="text-[10px] text-slate-400 font-medium" x-text="trx.date"></p>
-                            </div>
+            <div class="tab-section">
+                <div class="gpu-layer">
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
+                            <p class="text-[10px] font-bold opacity-70 uppercase tracking-wider">Total Unit</p>
+                            <p class="text-3xl font-black mt-1" x-text="totalStock()"></p>
                         </div>
-                        <div class="text-right">
-                            <p :class="trx.type === 'in' ? 'text-emerald-600' : 'text-rose-600'" class="font-black text-lg" x-text="(trx.type === 'in' ? '+' : '-') + trx.qty"></p>
-                            <p class="text-[9px] font-mono text-slate-300" x-text="trx.location"></p>
+                        <div @click="currentTab = 'barang'" class="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm text-left">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Jenis Barang</p>
+                            <p class="text-3xl font-black text-slate-800 mt-1" x-text="items.length"></p>
                         </div>
                     </div>
-                </template>
-            </div>
-        </div>
 
-        <div x-show="currentTab === 'barang'" x-transition class="gpu-layer">
-            <div class="relative mb-6">
-                <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" x-model="search" placeholder="Cari Kode, Nama, Lokasi..." 
-                    class="w-full pl-14 pr-6 py-5 rounded-[2rem] bg-white border-none shadow-sm focus:ring-2 focus:ring-indigo-500">
-            </div>
-
-            <div class="space-y-4">
-                <template x-for="item in filteredItems" :key="item.id">
-                    <div class="bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-50 flex justify-between items-center">
-                        <div class="flex-1">
-                            <div class="flex gap-2 items-center mb-1">
-                                <span class="text-[9px] font-mono font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded" x-text="item.invNo"></span>
-                                <span class="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase" x-text="item.location"></span>
-                            </div>
-                            <h3 class="font-bold text-slate-800 text-lg" x-text="item.name"></h3>
-                            <p class="text-sm text-slate-400 font-semibold" x-text="'Rp ' + formatNumber(item.price)"></p>
-                        </div>
-                        <div class="flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-[1.5rem] border border-slate-100">
-                            <div class="text-center">
-                                <span class="text-[9px] font-bold text-slate-400 block leading-none mb-1">STOK</span>
-                                <span class="text-2xl font-black text-slate-700" x-text="item.stock"></span>
-                            </div>
-                        </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-extrabold text-slate-800">Riwayat Transaksi</h2>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase" x-text="transactions.length + ' Total'"></span>
                     </div>
-                </template>
-            </div>
-        </div>
-
-        <div x-show="currentTab === 'laporan'" x-transition class="gpu-layer">
-            <h2 class="font-black text-2xl text-slate-800 mb-6">Laporan Per Bulan</h2>
-            <div class="space-y-4">
-                <template x-for="report in getMonthlyReports()" :key="report.key">
-                    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex justify-between items-center">
-                        <div>
-                            <p class="text-lg font-black text-slate-800" x-text="report.monthName"></p>
-                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider" x-text="report.count + ' Transaksi'"></p>
-                        </div>
-                        <button @click="downloadMonthlyPDF(report.month, report.year, report.monthName)" class="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 active:scale-95 transition">
-                            <i class="fas fa-file-pdf"></i> PDF
-                        </button>
+                    
+                    <div class="space-y-3">
+                        <template x-for="(trx, index) in transactions.slice(0, showLimit)" :key="trx.id">
+                            <div class="bg-white p-4 rounded-3xl flex items-center justify-between border border-slate-50 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div :class="trx.type === 'in' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'" 
+                                         class="w-12 h-12 rounded-2xl flex items-center justify-center text-lg">
+                                        <i :class="trx.type === 'in' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-sm text-slate-800" x-text="trx.itemName"></p>
+                                        <p class="text-[10px] text-slate-400 font-medium" x-text="trx.date"></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="text-right">
+                                        <p :class="trx.type === 'in' ? 'text-emerald-600' : 'text-rose-600'" class="font-black text-lg" x-text="(trx.type === 'in' ? '+' : '-') + trx.qty"></p>
+                                        <p class="text-[9px] font-mono text-slate-300" x-text="trx.location"></p>
+                                    </div>
+                                    <button @click="deleteTransaction(trx.id)" class="text-slate-300 hover:text-rose-500 p-2 transition-colors">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
                     </div>
-                </template>
-            </div>
-        </div>
-
-        <div x-show="currentTab === 'settings'" x-transition class="gpu-layer">
-            <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 space-y-6">
-                <h2 class="font-black text-2xl text-slate-800">Sistem & Data</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <button @click="exportData()" class="flex flex-col items-center p-4 bg-indigo-50 text-indigo-600 rounded-3xl gap-2">
-                        <i class="fas fa-file-download text-xl"></i>
-                        <span class="text-[10px] font-bold uppercase">Export Backup</span>
-                    </button>
-                    <label class="flex flex-col items-center p-4 bg-slate-50 text-slate-600 rounded-3xl gap-2 cursor-pointer">
-                        <i class="fas fa-file-upload text-xl"></i>
-                        <span class="text-[10px] font-bold uppercase">Import Data</span>
-                        <input type="file" @change="importData($event)" class="hidden" accept=".json">
-                    </label>
                 </div>
-                <div class="pt-6 border-t border-slate-100">
-                    <button @click="showConfirm('Reset Data?', 'Semua data akan dihapus permanen!', () => resetApp())" class="w-full p-5 text-rose-500 font-bold text-sm bg-rose-50 rounded-2xl active:bg-rose-100 transition">Reset Semua Data</button>
+            </div>
+
+            <div class="tab-section">
+                <div class="gpu-layer">
+                    <div class="relative mb-6">
+                        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" x-model="search" placeholder="Cari Kode, Nama, Lokasi..." 
+                            class="w-full pl-14 pr-6 py-5 rounded-[2rem] bg-white border-none shadow-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div class="space-y-4">
+                        <template x-for="item in filteredItems" :key="item.id">
+                            <div class="bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-50 flex justify-between items-center">
+                                <div class="flex-1">
+                                    <div class="flex gap-2 items-center mb-1">
+                                        <span class="text-[9px] font-mono font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded" x-text="item.invNo"></span>
+                                        <span class="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase" x-text="item.location"></span>
+                                    </div>
+                                    <h3 class="font-bold text-slate-800 text-lg" x-text="item.name"></h3>
+                                    <p class="text-sm text-slate-400 font-semibold" x-text="'Rp ' + formatNumber(item.price)"></p>
+                                </div>
+                                <div class="flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-[1.5rem] border border-slate-100">
+                                    <div class="text-center">
+                                        <span class="text-[9px] font-bold text-slate-400 block leading-none mb-1">STOK</span>
+                                        <span class="text-2xl font-black text-slate-700" x-text="item.stock"></span>
+                                    </div>
+                                    <div class="border-l border-slate-200 pl-4 ml-2">
+                                        <button @click="deleteItem(item.id)" class="text-slate-300 hover:text-rose-500 transition-colors p-2">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-section">
+                <div class="gpu-layer">
+                    <h2 class="font-black text-2xl text-slate-800 mb-6">Laporan Per Bulan</h2>
+                    <div class="space-y-4">
+                        <template x-for="report in getMonthlyReports()" :key="report.key">
+                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex justify-between items-center">
+                                <div>
+                                    <p class="text-lg font-black text-slate-800" x-text="report.monthName"></p>
+                                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wider" x-text="report.count + ' Transaksi'"></p>
+                                </div>
+                                <button @click="downloadMonthlyPDF(report.month, report.year, report.monthName)" class="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 active:scale-95 transition">
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-section">
+                <div class="gpu-layer">
+                    <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 space-y-6">
+                        <h2 class="font-black text-2xl text-slate-800">Sistem & Data</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button @click="exportData()" class="flex flex-col items-center p-4 bg-indigo-50 text-indigo-600 rounded-3xl gap-2">
+                                <i class="fas fa-file-download text-xl"></i>
+                                <span class="text-[10px] font-bold uppercase">Export Backup</span>
+                            </button>
+                            <label class="flex flex-col items-center p-4 bg-slate-50 text-slate-600 rounded-3xl gap-2 cursor-pointer">
+                                <i class="fas fa-file-upload text-xl"></i>
+                                <span class="text-[10px] font-bold uppercase">Import Data</span>
+                                <input type="file" @change="importData($event)" class="hidden" accept=".json">
+                            </label>
+                        </div>
+                        <div class="pt-6 border-t border-slate-100">
+                            <button @click="showConfirm('Reset Data?', 'Semua data akan dihapus permanen!', () => resetApp())" class="w-full p-5 text-rose-500 font-bold text-sm bg-rose-50 rounded-2xl active:bg-rose-100 transition">Reset Semua Data</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -274,8 +310,6 @@
                 selectedItemId: 'new',
                 transactionType: 'in',
                 customModal: { show: false, title: '', message: '', type: 'info', isConfirm: false, btnText: 'OK', onConfirm: () => {} },
-                
-                // Menambahkan state pengunci swipe
                 isSwiping: false,
 
                 showAlert(title, message, type = 'info') {
@@ -293,12 +327,10 @@
 
                     const mainElement = document.querySelector('main');
                     const mc = new Hammer(mainElement);
-                    
-                    // Optimasi Hammer JS untuk mencegah trigger ganda
                     mc.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 20, velocity: 0.3 });
 
                     mc.on("swipeleft", () => {
-                        if (this.isSwiping) return; // Mencegah loncat tab
+                        if (this.isSwiping) return;
                         let currentIndex = this.tabsOrder.indexOf(this.currentTab);
                         if (currentIndex < this.tabsOrder.length - 1) {
                             this.currentTab = this.tabsOrder[currentIndex + 1];
@@ -307,7 +339,7 @@
                     });
 
                     mc.on("swiperight", () => {
-                        if (this.isSwiping) return; // Mencegah loncat tab
+                        if (this.isSwiping) return;
                         let currentIndex = this.tabsOrder.indexOf(this.currentTab);
                         if (currentIndex > 0) {
                             this.currentTab = this.tabsOrder[currentIndex - 1];
@@ -316,7 +348,6 @@
                     });
                 },
 
-                // Fungsi pengunci sementara agar tidak swipe berkali-kali dalam satu gerakan
                 lockSwipe() {
                     this.isSwiping = true;
                     setTimeout(() => {
@@ -335,17 +366,43 @@
                 },
 
                 processTransaction() {
-                    if (this.trxQty <= 0) {
-                        this.showAlert("Error", "Jumlah harus lebih dari 0", "error");
+                    // 1. Validasi Dasar: Jumlah transaksi
+                    if (this.trxQty === '' || this.trxQty <= 0 || !Number.isInteger(Number(this.trxQty))) {
+                        this.showAlert("Error", "Jumlah unit harus berupa angka bulat lebih dari 0", "error");
                         return;
                     }
+
                     let targetItem;
 
+                    // 2. Validasi Input Barang Baru
                     if (this.selectedItemId === 'new' && this.transactionType === 'in') {
-                        if (!this.newItem.name) {
-                            this.showAlert("Error", "Nama barang wajib diisi", "error");
+                        // Pembersihan input (Trimming)
+                        this.newItem.name = this.newItem.name.trim();
+                        this.newItem.location = this.newItem.location.trim();
+
+                        if (!this.newItem.name || this.newItem.name.length < 3) {
+                            this.showAlert("Error", "Nama barang minimal 3 karakter", "error");
                             return;
                         }
+
+                        if (this.newItem.price < 0) {
+                            this.showAlert("Error", "Harga tidak boleh negatif", "error");
+                            return;
+                        }
+
+                        // Validasi Rasio Kemasan
+                        if (this.newItem.isPackage && (this.newItem.ratio <= 0 || !this.newItem.ratio)) {
+                            this.showAlert("Error", "Isi per kemasan harus lebih dari 0", "error");
+                            return;
+                        }
+
+                        // Cek Duplikasi Nama (Opsional tapi disarankan)
+                        const isDuplicate = this.items.some(i => i.name.toLowerCase() === this.newItem.name.toLowerCase());
+                        if (isDuplicate) {
+                            this.showAlert("Peringatan", "Barang dengan nama ini sudah ada di sistem", "error");
+                            return;
+                        }
+
                         this.config.lastIteration++;
                         
                         let finalQty = parseInt(this.trxQty);
@@ -367,17 +424,23 @@
                         targetItem = this.items.find(i => i.id == this.selectedItemId);
                     }
 
-                    if (!targetItem) return;
+                    // 3. Validasi Operasional (Stok Keluar)
+                    if (!targetItem) {
+                        this.showAlert("Error", "Item tidak ditemukan", "error");
+                        return;
+                    }
+
                     if (this.transactionType === 'in') {
                         targetItem.stock += parseInt(this.trxQty);
                     } else {
                         if (targetItem.stock < this.trxQty) {
-                            this.showAlert("Gagal", "Stok tidak mencukupi!", "error");
+                            this.showAlert("Gagal", `Stok tidak mencukupi! Stok saat ini: ${targetItem.stock}`, "error");
                             return;
                         }
                         targetItem.stock -= parseInt(this.trxQty);
                     }
 
+                    // Simpan Transaksi
                     this.transactions.unshift({ 
                         id: Date.now(), 
                         itemName: targetItem.name, 
@@ -393,6 +456,48 @@
                     this.openModal = false;
                     this.resetForms();
                     this.showAlert("Sukses", "Transaksi berhasil disimpan");
+                },
+
+                deleteTransaction(trxId) {
+                    this.showConfirm('Hapus Transaksi?', 'Stok barang akan dikembalikan ke kondisi sebelumnya.', () => {
+                        const trxIndex = this.transactions.findIndex(t => t.id === trxId);
+                        if (trxIndex === -1) return;
+
+                        const trx = this.transactions[trxIndex];
+                        const targetItem = this.items.find(i => i.invNo === trx.invNo);
+
+                        if (targetItem) {
+                            if (trx.type === 'in') {
+                                targetItem.stock -= parseInt(trx.qty);
+                            } else {
+                                targetItem.stock += parseInt(trx.qty);
+                            }
+                        }
+
+                        this.transactions.splice(trxIndex, 1);
+                        this.save();
+                        this.showAlert("Sukses", "Transaksi telah dihapus");
+                    });
+                },
+
+                deleteItem(itemId) {
+                    const itemIndex = this.items.findIndex(i => i.id === itemId);
+                    if (itemIndex === -1) return;
+
+                    const item = this.items[itemIndex];
+
+                    if (item.stock > 0) {
+                        this.showAlert("Gagal Menghapus", `Barang "${item.name}" masih memiliki stok (${item.stock}). Kosongkan stok terlebih dahulu melalui transaksi keluar.`, "error");
+                        return;
+                    }
+
+                    this.showConfirm('Hapus Barang?', `Apakah Anda yakin ingin menghapus "${item.name}" dari sistem?`, () => {
+                        this.items.splice(itemIndex, 1);
+                        // Bersihkan riwayat transaksi item tersebut agar data tetap sinkron
+                        this.transactions = this.transactions.filter(t => t.invNo !== item.invNo);
+                        this.save();
+                        this.showAlert("Sukses", "Barang telah dihapus dari sistem");
+                    });
                 },
 
                 getMonthlyReports() {
@@ -419,23 +524,18 @@
                 downloadMonthlyPDF(month, year, monthName) {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF('p', 'mm', 'a4');
-                    
                     const targetStartDate = new Date(year, month, 1);
                     const targetEndDate = new Date(year, month + 1, 0, 23, 59, 59);
-                    
                     doc.setFillColor(79, 70, 229); 
                     doc.rect(0, 0, 210, 30, 'F');
-                    
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(18);
                     doc.setTextColor(255, 255, 255);
                     doc.text('SMARTSTOCK', 12, 12);
-                    
                     doc.setFontSize(9);
                     doc.setFont("helvetica", "normal");
                     doc.setTextColor(199, 210, 254);
                     doc.text('Laporan Inventaris Digital Otomatis', 12, 18);
-                    
                     doc.setFillColor(255, 255, 255, 0.15);
                     doc.roundedRect(145, 8, 52, 14, 2, 2, 'F');
                     doc.setTextColor(255, 255, 255);
@@ -443,16 +543,13 @@
                     doc.text('PERIODE:', 148, 13);
                     doc.setFontSize(10);
                     doc.text(monthName.toUpperCase(), 148, 19);
-
                     doc.setTextColor(120);
                     doc.setFontSize(7);
                     doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 12, 35);
-
                     doc.setFontSize(10);
                     doc.setFont("helvetica", "bold");
                     doc.setTextColor(30, 41, 59);
                     doc.text('I. RINGKASAN MUTASI BARANG', 12, 42);
-
                     const itemSummaries = this.items.map(item => {
                         let saldoLalu = 0, masuk = 0, keluar = 0;
                         this.transactions.forEach(t => {
@@ -476,7 +573,6 @@
                             (saldoLalu + masuk - keluar).toLocaleString('id-ID')
                         ];
                     });
-
                     doc.autoTable({
                         startY: 45,
                         head: [['SKU', 'NAMA ITEM', 'AWAL', 'MASUK', 'KELUAR', 'AKHIR']],
@@ -494,12 +590,10 @@
                         styles: { fontSize: 7.5, cellPadding: 1.5, lineColor: [241, 245, 249], lineWidth: 0.1 },
                         margin: { left: 12, right: 12 }
                     });
-
                     const nextY = doc.lastAutoTable.finalY + 8;
                     doc.setFontSize(10);
                     doc.setFont("helvetica", "bold");
                     doc.text('II. LOG AKTIVITAS TRANSAKSI', 12, nextY);
-
                     const monthlyTrx = this.transactions
                         .filter(t => {
                             const tDate = new Date(t.timestamp);
@@ -514,7 +608,6 @@
                             t.type === 'in' ? `+${t.qty}` : `-${t.qty}`,
                             t.location
                         ]);
-
                     doc.autoTable({
                         startY: nextY + 3,
                         head: [['TANGGAL', 'SKU', 'NAMA BARANG', 'STATUS', 'QTY', 'LOKASI']],
@@ -537,7 +630,6 @@
                         styles: { fontSize: 7, cellPadding: 1.2 },
                         margin: { left: 12, right: 12 }
                     });
-
                     const pageCount = doc.internal.getNumberOfPages();
                     for(let i = 1; i <= pageCount; i++) {
                         doc.setPage(i);
@@ -545,8 +637,7 @@
                         doc.setTextColor(160);
                         doc.text(`SmartStock - Halaman ${i} / ${pageCount}`, 105, 290, { align: 'center' });
                     }
-
-                    doc.save(`Laporan_Dense_${monthName.replace(' ', '_')}.pdf`);
+                    doc.save(`Laporan_${monthName.replace(' ', '_')}.pdf`);
                 },
 
                 exportData() {
@@ -583,7 +674,11 @@
                 formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num); },
                 get filteredItems() {
                     const s = this.search.toLowerCase();
-                    return this.items.filter(i => i.name.toLowerCase().includes(s) || i.invNo.toLowerCase().includes(s));
+                    return this.items.filter(i => 
+                        i.name.toLowerCase().includes(s) || 
+                        i.invNo.toLowerCase().includes(s) || 
+                        (i.location && i.location.toLowerCase().includes(s))
+                    );
                 }
             }
         }
