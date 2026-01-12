@@ -180,6 +180,16 @@
                 <div class="gpu-layer">
                     <div class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 space-y-6">
                         <h2 class="font-black text-2xl text-slate-800">Sistem & Data</h2>
+                        
+                        <div class="p-5 bg-indigo-50 rounded-3xl border border-indigo-100">
+                            <label class="text-[10px] font-bold text-indigo-400 uppercase ml-1">Format Prefix Kode (SKU)</label>
+                            <div class="flex gap-2 mt-2">
+                                <input type="text" x-model="config.prefix" @input="save()" placeholder="Contoh: SKU-2026-" 
+                                    class="flex-1 p-4 bg-white rounded-xl border-none font-bold text-indigo-600 focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-2 px-1">* Ubah awalan kode untuk barang baru di sini.</p>
+                        </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             <button @click="exportData()" class="flex flex-col items-center p-4 bg-indigo-50 text-indigo-600 rounded-3xl gap-2">
                                 <i class="fas fa-file-download text-xl"></i>
@@ -366,7 +376,6 @@
                 },
 
                 processTransaction() {
-                    // 1. Validasi Dasar: Jumlah transaksi
                     if (this.trxQty === '' || this.trxQty <= 0 || !Number.isInteger(Number(this.trxQty))) {
                         this.showAlert("Error", "Jumlah unit harus berupa angka bulat lebih dari 0", "error");
                         return;
@@ -374,9 +383,7 @@
 
                     let targetItem;
 
-                    // 2. Validasi Input Barang Baru
                     if (this.selectedItemId === 'new' && this.transactionType === 'in') {
-                        // Pembersihan input (Trimming)
                         this.newItem.name = this.newItem.name.trim();
                         this.newItem.location = this.newItem.location.trim();
 
@@ -390,13 +397,11 @@
                             return;
                         }
 
-                        // Validasi Rasio Kemasan
                         if (this.newItem.isPackage && (this.newItem.ratio <= 0 || !this.newItem.ratio)) {
                             this.showAlert("Error", "Isi per kemasan harus lebih dari 0", "error");
                             return;
                         }
 
-                        // Cek Duplikasi Nama (Opsional tapi disarankan)
                         const isDuplicate = this.items.some(i => i.name.toLowerCase() === this.newItem.name.toLowerCase());
                         if (isDuplicate) {
                             this.showAlert("Peringatan", "Barang dengan nama ini sudah ada di sistem", "error");
@@ -424,7 +429,6 @@
                         targetItem = this.items.find(i => i.id == this.selectedItemId);
                     }
 
-                    // 3. Validasi Operasional (Stok Keluar)
                     if (!targetItem) {
                         this.showAlert("Error", "Item tidak ditemukan", "error");
                         return;
@@ -440,7 +444,6 @@
                         targetItem.stock -= parseInt(this.trxQty);
                     }
 
-                    // Simpan Transaksi
                     this.transactions.unshift({ 
                         id: Date.now(), 
                         itemName: targetItem.name, 
@@ -493,7 +496,6 @@
 
                     this.showConfirm('Hapus Barang?', `Apakah Anda yakin ingin menghapus "${item.name}" dari sistem?`, () => {
                         this.items.splice(itemIndex, 1);
-                        // Bersihkan riwayat transaksi item tersebut agar data tetap sinkron
                         this.transactions = this.transactions.filter(t => t.invNo !== item.invNo);
                         this.save();
                         this.showAlert("Sukses", "Barang telah dihapus dari sistem");
