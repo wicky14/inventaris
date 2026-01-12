@@ -53,7 +53,6 @@
             display: flex;
             width: 400%;
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            /* Memperbaiki tinggi agar mengikuti konten aktif */
             align-items: flex-start;
         }
 
@@ -61,13 +60,11 @@
             width: 25%;
             flex-shrink: 0;
             padding: 0 1.5rem;
-            /* Memastikan tab yang tidak aktif tidak menambah tinggi halaman */
             height: 0;
             overflow: hidden;
             visibility: hidden;
         }
 
-        /* Kelas aktif untuk memunculkan konten dan tinggi data */
         .tab-section.active-tab {
             height: auto;
             overflow: visible;
@@ -86,6 +83,12 @@
             position: absolute;
             left: -9999px;
             top: 0;
+        }
+
+        .modal-scroll-area {
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
@@ -288,7 +291,7 @@
         <div class="relative bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b flex justify-between items-center">
                 <h3 class="font-black text-lg">Pratinjau Laporan</h3>
-                <button @click="showImagePreview = false" class="text-slate-400"><i class="fas fa-times"></i></button>
+                <button @click="showImagePreview = false" class="text-slate-400"><i class="fas fa-times text-xl"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto p-4 bg-slate-100">
                 <img :src="previewImageData" class="w-full shadow-lg rounded-lg border border-slate-200" x-show="previewImageData">
@@ -377,9 +380,21 @@
         </div>
     </div>
 
-    <div x-show="openModal" x-cloak class="fixed inset-0 z-[60] flex items-end px-0">
-        <div x-show="openModal" x-transition @click="openModal = false" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-        <div class="relative bg-white w-full rounded-t-[3rem] p-8 pb-14 shadow-2xl z-10 gpu-layer" x-transition:enter="transition translate-y-full" x-transition:enter-end="translate-y-0" x-transition:leave="transition translate-y-0" x-transition:leave-end="translate-y-full">
+    <div x-show="openModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
+        <div x-show="openModal" x-transition @click="openModal = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+        
+        <div class="relative bg-white w-full max-w-lg rounded-[3rem] p-8 pb-14 shadow-2xl z-10 gpu-layer modal-scroll-area" 
+             x-transition:enter="transition ease-out duration-300 transform" 
+             x-transition:enter-start="translate-y-full" 
+             x-transition:enter-end="translate-y-0" 
+             x-transition:leave="transition ease-in duration-200 transform" 
+             x-transition:leave-start="translate-y-0" 
+             x-transition:leave-end="translate-y-full">
+            
+            <button @click="openModal = false" class="absolute top-6 right-8 text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
             <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
             <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-8">
                 <button @click="transactionType = 'in'; selectedItemId = 'new'" :class="transactionType === 'in' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
@@ -391,6 +406,11 @@
             </div>
             
             <div class="space-y-5">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Tanggal Transaksi</label>
+                    <input type="date" x-model="transactionDate" class="w-full p-5 bg-slate-50 rounded-2xl border-none font-bold ring-2 ring-indigo-50 focus:ring-indigo-500">
+                </div>
+
                 <div>
                     <select x-model="selectedItemId" class="w-full p-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold appearance-none">
                         <option value="new" x-show="transactionType === 'in'">+ Tambah Barang Baru</option>
@@ -461,11 +481,12 @@
                 search: '',
                 items: [],
                 transactions: [],
+                transactionDate: new Date().toISOString().split('T')[0],
                 config: { prefix: 'SKU-' + new Date().getFullYear() + '-', lastIteration: 0, padding: 3 },
                 newItem: { name: '', price: '', location: '', ratio: 1, isPackage: false },
                 trxQty: '',
                 showLimit: 10,
-                reportLimit: 12, // Batasan awal tampilan laporan
+                reportLimit: 12, 
                 selectedItemId: 'new',
                 transactionType: 'in',
                 customModal: { show: false, title: '', message: '', type: 'info', isConfirm: false, btnText: 'OK', onConfirm: () => {} },
@@ -490,7 +511,6 @@
                     this.transactions = JSON.parse(localStorage.getItem('ss_transactions_v5') || '[]');
                     this.config = JSON.parse(localStorage.getItem('ss_config_v5') || JSON.stringify(this.config));
 
-                    // Memastikan scroll reset ke atas saat berpindah tab
                     this.$watch('currentTab', () => {
                         window.scrollTo({ top: 0, behavior: 'instant' });
                     });
@@ -538,6 +558,11 @@
                 processTransaction() {
                     if (this.trxQty === '' || this.trxQty <= 0 || !Number.isInteger(Number(this.trxQty))) {
                         this.showAlert("Error", "Jumlah unit harus berupa angka bulat lebih dari 0", "error");
+                        return;
+                    }
+
+                    if (!this.transactionDate) {
+                        this.showAlert("Error", "Tanggal transaksi harus diisi", "error");
                         return;
                     }
 
@@ -604,6 +629,9 @@
                         targetItem.stock -= parseInt(this.trxQty);
                     }
 
+                    const customDate = new Date(this.transactionDate);
+                    const formattedDate = customDate.toLocaleString('id-ID', { dateStyle: 'medium' }) + ', ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
                     this.transactions.unshift({ 
                         id: Date.now(), 
                         itemName: targetItem.name, 
@@ -611,10 +639,12 @@
                         type: this.transactionType, 
                         qty: this.trxQty, 
                         location: targetItem.location,
-                        date: new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
-                        timestamp: new Date().toISOString()
+                        date: formattedDate,
+                        timestamp: customDate.toISOString()
                     });
                     
+                    this.transactions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
                     this.save();
                     this.openModal = false;
                     this.resetForms();
@@ -921,6 +951,7 @@
 
                 resetForms() { 
                     this.trxQty = ''; 
+                    this.transactionDate = new Date().toISOString().split('T')[0];
                     this.newItem = { name: '', price: '', location: '', ratio: 1, isPackage: false }; 
                     if (this.items.length > 0) this.selectedItemId = this.items[0].id; 
                 },
