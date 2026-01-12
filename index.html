@@ -19,6 +19,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             -webkit-tap-highlight-color: transparent;
             overflow-y: auto !important;
+            transition: zoom 0.2s ease;
         }
         [x-cloak] { display: none !important; }
         
@@ -77,7 +78,7 @@
         }
 
         #report-template {
-            width: 800px;
+            width: 900px;
             padding: 40px;
             background: white;
             position: absolute;
@@ -96,7 +97,7 @@
 
     <header class="fixed top-0 w-full glass z-40 border-b border-indigo-500/30 px-6 flex justify-between items-center gpu-layer">
         <div>
-            <h1 class="text-xl font-extrabold tracking-tight text-white">SmartStock <span class="text-[10px] bg-white text-indigo-600 px-2 py-0.5 rounded-full ml-1">IT</span></h1>
+            <h1 class="text-xl font-extrabold tracking-tight text-white">SmartStock <span class="text-[10px] bg-white text-indigo-600 px-2 py-0.5 rounded-full ml-1">V1</span></h1>
             <p class="text-[10px] text-indigo-100 font-bold uppercase tracking-widest" x-text="currentTab"></p>
         </div>
         <div class="flex items-center gap-3">
@@ -141,6 +142,7 @@
                                     </div>
                                     <div>
                                         <p class="font-bold text-sm text-slate-800" x-text="trx.itemName"></p>
+                                        <p x-show="trx.note" class="text-[9px] text-indigo-500 font-bold italic" x-text="'&quot;' + trx.note + '&quot;'"></p>
                                         <p class="text-[10px] text-slate-400 font-medium" x-text="trx.date"></p>
                                     </div>
                                 </div>
@@ -247,6 +249,19 @@
                             <p class="text-[9px] text-slate-400 mt-2 px-1">* Ubah awalan kode untuk barang baru di sini.</p>
                         </div>
 
+                        <div class="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Ukuran Tampilan (Zoom)</label>
+                                <span class="text-xs font-black text-indigo-600" x-text="config.zoomScale + '%'"></span>
+                            </div>
+                            <input type="range" min="80" max="150" step="5" x-model="config.zoomScale" @input="updateZoom()" 
+                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                            <div class="flex justify-between mt-1 px-1">
+                                <span class="text-[8px] text-slate-400 font-bold">KECIL</span>
+                                <span class="text-[8px] text-slate-400 font-bold">BESAR</span>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-2 gap-4">
                             <button @click="exportData()" class="flex flex-col items-center p-4 bg-indigo-50 text-indigo-600 rounded-3xl gap-2">
                                 <i class="fas fa-file-download text-xl"></i>
@@ -260,6 +275,9 @@
                         </div>
                         <div class="pt-6 border-t border-slate-100">
                             <button @click="showConfirm('Reset Data?', 'Semua data akan dihapus permanen!', () => resetApp())" class="w-full p-5 text-rose-500 font-bold text-sm bg-rose-50 rounded-2xl active:bg-rose-100 transition">Reset Semua Data</button>
+                            <div class="mt-6 text-center">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Aplikasi dibuat di AGV</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -358,6 +376,7 @@
                         <th class="p-2 border border-slate-600">STATUS</th>
                         <th class="p-2 border border-slate-600 text-center">QTY</th>
                         <th class="p-2 border border-slate-600">LOKASI</th>
+                        <th class="p-2 border border-slate-600">KETERANGAN</th>
                     </tr>
                 </thead>
                 <tbody class="text-[9px]">
@@ -368,6 +387,7 @@
                             <td class="p-2 font-bold" :class="trx.type === 'in' ? 'text-emerald-600' : 'text-rose-600'" x-text="trx.type === 'in' ? 'MASUK' : 'KELUAR'"></td>
                             <td class="p-2 text-center font-bold" x-text="trx.type === 'in' ? '+' + trx.qty : '-' + trx.qty"></td>
                             <td class="p-2 text-slate-500" x-text="trx.location"></td>
+                            <td class="p-2 text-slate-500 italic" x-text="trx.note || '-'"></td>
                         </tr>
                     </template>
                 </tbody>
@@ -383,7 +403,7 @@
     <div x-show="openModal" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
         <div x-show="openModal" x-transition @click="openModal = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
         
-        <div class="relative bg-white w-full max-w-lg rounded-[3rem] p-8 pb-14 shadow-2xl z-10 gpu-layer modal-scroll-area" 
+        <div class="relative bg-white w-full max-lg rounded-[2.5rem] p-6 shadow-2xl z-10 gpu-layer modal-scroll-area" 
              x-transition:enter="transition ease-out duration-300 transform" 
              x-transition:enter-start="translate-y-full" 
              x-transition:enter-end="translate-y-0" 
@@ -391,66 +411,75 @@
              x-transition:leave-start="translate-y-0" 
              x-transition:leave-end="translate-y-full">
             
-            <button @click="openModal = false" class="absolute top-6 right-8 text-slate-400 hover:text-slate-600 transition-colors">
+            <button @click="openModal = false" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
 
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8"></div>
-            <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-8">
-                <button @click="transactionType = 'in'; selectedItemId = 'new'" :class="transactionType === 'in' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-6"></div>
+
+            <div class="flex bg-slate-100 p-1 rounded-2xl mb-5">
+                <button @click="transactionType = 'in'; selectedItemId = 'new'" :class="transactionType === 'in' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
                     <i class="fas fa-arrow-down"></i> Masuk
                 </button>
-                <button @click="transactionType = 'out'; if(items.length > 0) { selectedItemId = items[0].id }" :class="transactionType === 'out' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                <button @click="transactionType = 'out'; if(items.length > 0) { selectedItemId = items[0].id }" :class="transactionType === 'out' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
                     <i class="fas fa-arrow-up"></i> Keluar
                 </button>
             </div>
             
-            <div class="space-y-5">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Tanggal Transaksi</label>
-                    <input type="date" x-model="transactionDate" class="w-full p-5 bg-slate-50 rounded-2xl border-none font-bold ring-2 ring-indigo-50 focus:ring-indigo-500">
-                </div>
-
-                <div>
-                    <select x-model="selectedItemId" class="w-full p-5 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 font-bold appearance-none">
-                        <option value="new" x-show="transactionType === 'in'">+ Tambah Barang Baru</option>
-                        <template x-for="item in items" :key="item.id">
-                            <option :value="item.id" x-text="item.name + ' (' + item.invNo + ')'"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <div x-show="selectedItemId === 'new' && transactionType === 'in'" class="space-y-4" x-transition>
-                    <input type="text" x-model="newItem.name" placeholder="Nama Barang Baru" class="w-full p-5 bg-slate-50 rounded-2xl border-none font-bold ring-2 ring-indigo-100">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" x-model="newItem.location" placeholder="Lokasi" class="w-full p-5 bg-slate-50 rounded-2xl border-none">
-                        <input type="number" x-model.number="newItem.price" placeholder="Harga Jual" class="w-full p-5 bg-slate-50 rounded-2xl border-none">
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Tanggal</label>
+                        <input type="date" x-model="transactionDate" class="w-full p-3 bg-slate-50 rounded-xl border-none font-bold text-sm ring-1 ring-slate-100 focus:ring-indigo-500">
                     </div>
-
-                    <div class="flex gap-2 p-1.5 bg-slate-100 rounded-2xl">
-                        <button @click="newItem.isPackage = false" :class="!newItem.isPackage ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-[10px] font-bold uppercase transition-all">Pcs (Satuan)</button>
-                        <button @click="newItem.isPackage = true" :class="newItem.isPackage ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'" class="flex-1 py-2 rounded-xl text-[10px] font-bold uppercase transition-all">Kemasan (Box/Lusin)</button>
-                    </div>
-
-                    <div x-show="newItem.isPackage" x-transition class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
-                        <label class="text-[10px] font-bold text-indigo-400 uppercase ml-1">Isi per Kemasan (Ke Pcs)</label>
-                        <input type="number" x-model.number="newItem.ratio" placeholder="Contoh: 12" class="w-full p-4 bg-white rounded-xl border-none font-bold mt-1 text-indigo-600">
+                    <div>
+                        <label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Pilih Barang</label>
+                        <select x-model="selectedItemId" class="w-full p-3 bg-slate-50 rounded-xl border-none text-sm focus:ring-1 focus:ring-indigo-500 font-bold appearance-none ring-1 ring-slate-100">
+                            <option value="new" x-show="transactionType === 'in'">+ Baru</option>
+                            <template x-for="item in items" :key="item.id">
+                                <option :value="item.id" x-text="item.name"></option>
+                            </template>
+                        </select>
                     </div>
                 </div>
 
-                <div class="bg-indigo-50/50 p-6 rounded-[2.5rem]">
+                <div x-show="selectedItemId === 'new' && transactionType === 'in'" class="space-y-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/30" x-transition>
+                    <input type="text" x-model="newItem.name" placeholder="Nama Barang Baru" class="w-full p-3 bg-white rounded-xl border-none text-sm font-bold shadow-sm">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" x-model="newItem.location" placeholder="Lokasi" class="w-full p-3 bg-white rounded-xl border-none text-sm shadow-sm">
+                        <input type="number" x-model.number="newItem.price" placeholder="Harga" class="w-full p-3 bg-white rounded-xl border-none text-sm shadow-sm">
+                    </div>
+                    <div class="flex gap-1 p-1 bg-white/50 rounded-lg">
+                        <button @click="newItem.isPackage = false" :class="!newItem.isPackage ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'" class="flex-1 py-1.5 rounded-md text-[9px] font-bold uppercase transition-all">Pcs</button>
+                        <button @click="newItem.isPackage = true" :class="newItem.isPackage ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'" class="flex-1 py-1.5 rounded-md text-[9px] font-bold uppercase transition-all">Pack</button>
+                    </div>
+                    <div x-show="newItem.isPackage" x-transition class="flex items-center gap-3 px-1">
+                        <span class="text-[9px] font-bold text-indigo-400 uppercase">Isi/Pack:</span>
+                        <input type="number" x-model.number="newItem.ratio" class="w-full p-2 bg-white rounded-lg border-none font-bold text-sm text-indigo-600 shadow-sm">
+                    </div>
+                </div>
+
+                <div class="bg-indigo-600 p-4 rounded-[2rem] text-white">
                     <div class="flex items-center justify-between">
-                        <button @click="trxQty > 0 ? trxQty-- : null" class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-indigo-600 active:scale-90 transition">
+                        <button @click="trxQty > 0 ? trxQty-- : null" class="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center text-white active:scale-90 transition">
                             <i class="fas fa-minus"></i>
                         </button>
-                        <input type="number" x-model.number="trxQty" placeholder="0" class="w-1/2 bg-transparent border-none text-4xl font-black text-center text-indigo-600 focus:ring-0">
-                        <button @click="trxQty++" class="w-12 h-12 rounded-2xl bg-indigo-600 shadow-lg flex items-center justify-center text-white active:scale-90 transition">
+                        <div class="flex flex-col items-center">
+                            <input type="number" x-model.number="trxQty" placeholder="0" class="w-24 bg-transparent border-none text-4xl font-black text-center text-white focus:ring-0 p-0">
+                            <span class="text-[8px] font-bold opacity-60 uppercase tracking-tighter mt-1">Jumlah Unit</span>
+                        </div>
+                        <button @click="trxQty++" class="w-10 h-10 rounded-xl bg-white text-indigo-600 shadow-sm flex items-center justify-center active:scale-90 transition">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                 </div>
 
-                <button @click="processTransaction()" :class="transactionType === 'in' ? 'bg-emerald-500 shadow-emerald-100' : 'bg-rose-500 shadow-rose-100'" class="w-full text-white py-6 rounded-[2rem] font-bold text-lg shadow-xl mt-4 active:scale-95 transition transform">Simpan Transaksi</button>
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Keterangan</label>
+                    <input type="text" x-model="trxNote" placeholder="Catatan transaksi..." class="w-full p-3 bg-slate-50 rounded-xl border-none text-sm font-medium ring-1 ring-slate-100 focus:ring-indigo-500">
+                </div>
+
+                <button @click="processTransaction()" :class="transactionType === 'in' ? 'bg-emerald-500 shadow-emerald-100' : 'bg-rose-500 shadow-rose-100'" class="w-full text-white py-4 rounded-[1.5rem] font-bold text-base shadow-xl mt-2 active:scale-95 transition transform">Simpan Transaksi</button>
             </div>
         </div>
     </div>
@@ -482,9 +511,10 @@
                 items: [],
                 transactions: [],
                 transactionDate: new Date().toISOString().split('T')[0],
-                config: { prefix: 'SKU-' + new Date().getFullYear() + '-', lastIteration: 0, padding: 3 },
+                config: { prefix: 'SKU-' + new Date().getFullYear() + '-', lastIteration: 0, padding: 3, zoomScale: 100 },
                 newItem: { name: '', price: '', location: '', ratio: 1, isPackage: false },
                 trxQty: '',
+                trxNote: '',
                 showLimit: 10,
                 reportLimit: 12, 
                 selectedItemId: 'new',
@@ -511,6 +541,8 @@
                     this.transactions = JSON.parse(localStorage.getItem('ss_transactions_v5') || '[]');
                     this.config = JSON.parse(localStorage.getItem('ss_config_v5') || JSON.stringify(this.config));
 
+                    this.updateZoom();
+
                     this.$watch('currentTab', () => {
                         window.scrollTo({ top: 0, behavior: 'instant' });
                     });
@@ -536,6 +568,11 @@
                             this.lockSwipe();
                         }
                     });
+                },
+
+                updateZoom() {
+                    document.body.style.zoom = (this.config.zoomScale || 100) + '%';
+                    this.save();
                 },
 
                 lockSwipe() {
@@ -638,6 +675,7 @@
                         invNo: targetItem.invNo, 
                         type: this.transactionType, 
                         qty: this.trxQty, 
+                        note: this.trxNote,
                         location: targetItem.location,
                         date: formattedDate,
                         timestamp: customDate.toISOString()
@@ -882,11 +920,11 @@
                             t.itemName,
                             t.type === 'in' ? 'MASUK' : 'KELUAR',
                             t.type === 'in' ? `+${t.qty}` : `-${t.qty}`,
-                            t.location
+                            t.note || '-'
                         ]);
                     doc.autoTable({
                         startY: nextY + 3,
-                        head: [['TANGGAL', 'SKU', 'NAMA BARANG', 'STATUS', 'QTY', 'LOKASI']],
+                        head: [['TANGGAL', 'SKU', 'NAMA BARANG', 'STATUS', 'QTY', 'KETERANGAN']],
                         body: monthlyTrx,
                         theme: 'grid',
                         headStyles: { fillColor: [71, 85, 105], halign: 'center', fontSize: 8 },
@@ -951,6 +989,7 @@
 
                 resetForms() { 
                     this.trxQty = ''; 
+                    this.trxNote = '';
                     this.transactionDate = new Date().toISOString().split('T')[0];
                     this.newItem = { name: '', price: '', location: '', ratio: 1, isPackage: false }; 
                     if (this.items.length > 0) this.selectedItemId = this.items[0].id; 
