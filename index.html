@@ -652,10 +652,8 @@
                         doc.text(`SmartStock - Halaman ${i} / ${pageCount}`, 105, 290, { align: 'center' });
                     }
                     
-                    // UPDATE: Nama file untuk APK Wrapper agar ekstensi tetap .pdf
+                    /* PERBAIKAN LOGIKA DOWNLOAD AGAR EKSTENSI TETAP .PDF */
                     const safeFileName = `Laporan_${monthName.split(' ').join('_')}.pdf`;
-                    
-                    // PERBAIKAN LOGIKA DOWNLOAD AGAR TIDAK MENJADI PNG PADA MOBILE
                     const pdfOutput = doc.output('blob');
                     const pdfUrl = URL.createObjectURL(pdfOutput);
                     const downloadLink = document.createElement("a");
@@ -664,7 +662,7 @@
                     document.body.appendChild(downloadLink);
                     downloadLink.click();
                     document.body.removeChild(downloadLink);
-                    URL.revokeObjectURL(pdfUrl);
+                    setTimeout(() => URL.revokeObjectURL(pdfUrl), 100);
                 },
 
                 exportData() {
